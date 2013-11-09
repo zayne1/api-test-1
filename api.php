@@ -76,9 +76,8 @@ class Entity {
 	 *  
 	 * out: 0 on fail, 1 on success
 	 * 
-	 * This is a parent function which is meant to be inherited by
 	 * */
-	public function add($JSONData) {
+	public function add() {
 		//run a rest util that converts the JSON data to an array. Rest util should be able to accept an array as well as obj
 		// todo later: run a api util that checks the keys of an array, and tests to see if they exist in a db
 		// build the query up
@@ -86,7 +85,9 @@ class Entity {
 		// todo later: test for query run failure
 		$sQry = '';
 		$sCollection = RESTUtil::getURICollection();
-		$arrData = RESTUtil::JSONToArray($JSONData);
+		$arrData = RESTUtil::JSONtoPHPObj($_POST);
+		$arrData = (array)$arrData;
+		
 		$sFields = '';
 		$sVals = '';
 		
@@ -98,9 +99,8 @@ class Entity {
 		$sFields = substr_replace($sFields, ')', -1);
 		$sVals = substr_replace($sVals, ')', -1);
 		
-		$sQry = 'INSERT into ' . $collection . ' (' . $sFields . ' VALUES (' . $sVals;
-		
-        $this->DB->query($sQry); // TODO: do err checking
+		$sQry = 'INSERT into ' . $sCollection . ' (' . $sFields . ' VALUES (' . $sVals;
+        //$this->DB->query($sQry); // TODO: do err checking
 	}
 	 
 	public function view() {;} 
@@ -116,21 +116,31 @@ class Entity {
 
 /*** RESTUtils file section start  ***/
 class RESTUtil {
+	private $sRequestType;
+	private $RequestData;
+	
+	function __construct($sRequestType = 'get') {
+		$this->sRequestType = strtolower($_SERVER['REQUEST_METHOD']);
+		$this->RequestData = $this->getRequestData();
+	}
 	
 	/* in: JSON object from client
-	 * out: Array
+	 * out: PHP Object
+	 * 
+	 * Made to handle JSON data that is sent as a JSON object via an ajax POST, or as raw input  
 	 * */
-	public static function JSONToArray($JSONData) {
-		$arrData = '';
-		if ( is_object($JSONData) ) { // a single item
-			$arrData = (array)$JSONData;
-		} else if ( is_array($JSONData) ) { //an array containing multiple items
-			// Todo
-			;	
-		} else {
-			return 0;
+	public static function JSONtoPHPObj($JSONPOST) {
+		$sCollection = self::getURICollection();
+		$oJson = '';
+		
+		if ( isset($JSONPOST) && !empty($JSONPOST) ) { // if JSON Obj posted via ajax POST
+		    $sJson = stripslashes($JSONPOST[$sCollection]);
+		    $oJson = json_decode($sJson);
+		} elseif ( (file_get_contents('php://input')) ) { // if JSON data sent as raw input
+		    $post_vars = json_decode(file_get_contents('php://input'));
+        	$oJson = $post_vars;
 		}
-		return $arrData;
+		return $oJson;
 	}
 	
 	/* in: 
@@ -148,7 +158,6 @@ class RESTUtil {
 		} elseif ( strstr($sBase, 'rss') ) {
 			$sExt = 'rss';
 		}
-		
 		return $sExt;
 	}
 	
@@ -167,8 +176,64 @@ class RESTUtil {
 		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
 		return ( isset($request_parts[3]) && $request_parts[3] !=='') ? $request_parts[3] : 0;
 	}
+	
+	/* in:
+	 * out: var containing request data that was sent to server
+	 * 
+	 * Made to return data wether it is sent as a POST, or as raw input
+	 * */
+	public function getRequestData() {
+		$data = '';
+		if ( $this->sRequestType == 'post' ) {
+			
+			if ( isset($_POST) && !empty($_POST) ) { // if JSON Obj posted via ajax POST
+				$data = $_POST;
+			} elseif ( file_get_contents('php://input') )  { // if JSON data sent as raw input
+				$data = json_decode(file_get_contents('php://input'));	
+			}
+			
+		} elseif ( $this->sRequestType == 'put' ) {
+			 parse_str(file_get_contents('php://input'), $put_vars);
+            $data = $put_vars; 
+		}
+		return $data;
+	}
+	
+	/* in: an object of class Entity (eg a User)
+	 * out: 
+	 * 
+	 * decides which method will be run for the entity 
+	 * */
+	public function process(Entity $myEntity) {
+		if ( isset($this->RequestData) && !empty($this->RequestData) ) {
+			if ( $this->sRequestType == 'post' ) {
+			$myEntity->add();	
+			} elseif ( $this->sRequestType == 'delete' ) {
+				;//TODO
+			}
+		} else {
+			if ( $this->sRequestType == 'get' ) {
+				;//TODO
+			}
+		}
+	}
+	
+	
 }
 /*** RESTUtils file section END  ***/
+
+
+
+
+
+
+
+
+/*** API file section START  ***/
+
+
+
+/*** API file section END  ***/
 
 
 
@@ -189,7 +254,17 @@ class d {
 	$d2->title = mam;
 
 $e = new Entity;
-$e->add($d1);
+// $e->add();
+
+
+
+
+$REST = new RESTUtil;
+$sEntityName = RESTUtil::getURICollection();
+	// ${$sEntityName . '_class'} = new Entity();
+$sEntity = new Entity;
+$REST->process($sEntity);
+
 
 /* Tests end */
 
