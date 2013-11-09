@@ -56,8 +56,13 @@
  * 					view(item)
  * 		
  * */
+ 
+/*** API file section start  ***/ 
 require('class/database.php');
 
+/* The Entity Class is meant to be a parent to our 'entitys' eg User, Topic, Comment, etc.
+ * The idea is to have a ready made base that they can inherit from, which already contains lots of the functionality
+ * */
 class Entity {
 	protected $DB;
 	protected $JSONData;
@@ -66,21 +71,36 @@ class Entity {
         $this->DB = new Database();
     }
 	
-	/* Accepts: JSON DATA
-	 * Returns: 0 on fail, 1 on success
+	/* in: 	Object, if it a single JSON obj was sent from client
+	 *		Array containing Objects, if multiple objects were sent from client
+	 *  
+	 * out: 0 on fail, 1 on success
 	 * 
-	 * 
+	 * This is a parent function which is meant to be inherited by
 	 * */
 	public function add($JSONData) {
-		//run a rest util that converts the JSON data to an array
+		//run a rest util that converts the JSON data to an array. Rest util should be able to accept an array as well as obj
 		// todo later: run a api util that checks the keys of an array, and tests to see if they exist in a db
 		// build the query up
 		// run query
 		// todo later: test for query run failure
+		$sQry = '';
+		$sCollection = RESTUtil::getURICollection();
+		$arrData = RESTUtil::JSONToArray($JSONData);
+		$sFields = '';
+		$sVals = '';
 		
-		$sql = 		"INSERT INTO user (title, name, surname, cellphone, email, date, address, password)
-                    VALUES ('$_POST[title]', '$_POST[name]', '$_POST[surname]', '$_POST[cellphone]', '$_POST[email]', '$_POST[date]', '$_POST[address]', '$_POST[password]')";
-            $this->DB->query($sql);
+		foreach ($arrData as $key => $value) { // TODO: This currently makes everything a str via the quotes. you should cater for non-strings too
+			$sFields.= $key . ',';
+			$sVals.= '"' . $value . '",';
+		}
+		
+		$sFields = substr_replace($sFields, ')', -1);
+		$sVals = substr_replace($sVals, ')', -1);
+		
+		$sQry = 'INSERT into ' . $collection . ' (' . $sFields . ' VALUES (' . $sVals;
+		
+        $this->DB->query($sQry); // TODO: do err checking
 	}
 	 
 	public function view() {;} 
@@ -88,4 +108,90 @@ class Entity {
 	public function update() {;} 
 	public function listAll() {;} 
 } 
+
+/*** API file section END  ***/
+
+
+
+
+/*** RESTUtils file section start  ***/
+class RESTUtil {
+	
+	/* in: JSON object from client
+	 * out: Array
+	 * */
+	public static function JSONToArray($JSONData) {
+		$arrData = '';
+		if ( is_object($JSONData) ) { // a single item
+			$arrData = (array)$JSONData;
+		} else if ( is_array($JSONData) ) { //an array containing multiple items
+			// Todo
+			;	
+		} else {
+			return 0;
+		}
+		return $arrData;
+	}
+	
+	/* in: 
+	 * out: lowercase extension datatype
+	 * */
+	public static function getURIExtension() {
+		// TODO: clean up
+		$sBase = strtolower(basename($_SERVER['REQUEST_URI']));
+		$sExt = 'json'; // Use JSON as default
+		
+		if ( strstr($sBase, 'json') ) {
+			$sExt = 'json';
+		} elseif ( strstr($sBase, 'xml') ) {
+			$sExt = 'xml';
+		} elseif ( strstr($sBase, 'rss') ) {
+			$sExt = 'rss';
+		}
+		
+		return $sExt;
+	}
+	
+	/* in:
+	 * out: 'Collection' part of URL, eg for the URL www.myapp.com/user/244.json we would return 'user' 
+	 * */
+	public static function getURICollection() {
+		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
+		return ( isset($request_parts[2]) && $request_parts[2] !=='') ? $request_parts[2] : 0;
+	}
+
+	/* in:
+	 * out: 'Item' part of URL, eg for the URL www.myapp.com/user/244.json we would return '244' 
+	 * */
+	public static function getURIItem() {
+		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
+		return ( isset($request_parts[3]) && $request_parts[3] !=='') ? $request_parts[3] : 0;
+	}
+}
+/*** RESTUtils file section END  ***/
+
+
+
+
+
+
+/* Tests start */
+class d {
+		public $age = 0;
+		public $title = 0;
+	}
+	
+	$d1 = new d;
+	$d2 = new d;
+	$d1->age = 11;
+	$d1->title = sir;
+	$d2->age = 22;
+	$d2->title = mam;
+
+$e = new Entity;
+$e->add($d1);
+
+/* Tests end */
+
+
 ?>
