@@ -56,6 +56,36 @@
  * 					view(item)
  * 		
  * */
+require('class/database.php');
 
-
+class Entity {
+	protected $DB;
+	protected $JSONData;
+    
+    public function __construct() {
+        $this->DB = new Database();
+    }
+	
+	/* Accepts: JSON DATA
+	 * Returns: 0 on fail, 1 on success
+	 * 
+	 * 
+	 * */
+	public function add($JSONData) {
+		//run a rest util that converts the JSON data to an array
+		// todo later: run a api util that checks the keys of an array, and tests to see if they exist in a db
+		// build the query up
+		// run query
+		// todo later: test for query run failure
+		
+		$sql = 		"INSERT INTO user (title, name, surname, cellphone, email, date, address, password)
+                    VALUES ('$_POST[title]', '$_POST[name]', '$_POST[surname]', '$_POST[cellphone]', '$_POST[email]', '$_POST[date]', '$_POST[address]', '$_POST[password]')";
+            $this->DB->query($sql);
+	}
+	 
+	public function view() {;} 
+	public function delete() {;} 
+	public function update() {;} 
+	public function listAll() {;} 
+} 
 ?>
