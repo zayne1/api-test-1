@@ -158,9 +158,41 @@ class Entity {
         
 		return $result;
 	} 
-	public function delete() {;} 
-	public function update() {;} 
-	public function listAll() {;} 
+	
+	public function delete($aMyArray) {
+		$sCollection = RESTUtil::getURICollection();
+		$sItem = RESTUtil::getURIItem();
+		$sQry = 'DELETE FROM ' . $sCollection . 
+				' WHERE id = ' . $sItem . '';
+	} 
+	public function update($oJSON) {
+		// todo later: test for query run failure
+		$sQry = '';
+		$sCollection = RESTUtil::getURICollection();
+		$sItem = RESTUtil::getURIItem();
+		
+		if ( isset($oJSON->{$sCollection}[0]) ) { // If the JSON obj name == the collection url
+			$arrData = (array)$oJSON->{$sCollection}[0]; // Return 0th array (who's val is an obj) from objects member (who's val should be the Collection url) 
+			
+			$sFields = '';
+			$sVals = '';
+			$sUpdateString = '';
+			
+			foreach ($arrData as $key => $value) { // TODO: This currently makes everything a str via the quotes. you should cater for non-strings too
+				$sUpdateString.=  $key . ' = "' . $value . '", '; 
+			}
+			$sUpdateString = substr_replace($sUpdateString, '', -2);
+			
+			$sQry =	'UPDATE ' . $sCollection . '
+					SET ' . $sUpdateString .'  
+					WHERE id = ' . $sItem;
+		
+	        $this->DB->query($sQry); // TODO: do err checking
+		} else {
+			//TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
+		}
+	} 
+	public function listAll() {;}
 } 
 
 /*** API file section END  ***/
@@ -262,8 +294,7 @@ class RESTUtil {
 			}
 			
 		} elseif ( $this->sRequestType == 'put' ) { // if JSON data sent as raw input
-			 parse_str(file_get_contents('php://input'), $put_vars);
-            $data = $put_vars; 
+            $data = file_get_contents('php://input'); 
 		}
 		return $data;
 	}
@@ -282,7 +313,14 @@ class RESTUtil {
 					$myEntity->add(); // POST /users
 				}
 			} elseif ( $this->sRequestType == 'delete' ) {
-				;//TODO
+				if ( RESTUtil::getURIItem() ) { // DELETE /users/22
+					$myEntity->delete();
+				}
+			} elseif ( $this->sRequestType == 'put' ) {
+				if ( RESTUtil::getURIItem() ) { // PUT /users/22
+					$oJSON = (json_decode($this->RequestData));
+					$myEntity->update($oJSON);
+				}
 			}
 		} else {
 			if ( $this->sRequestType == 'get' ) {
