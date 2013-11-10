@@ -76,6 +76,7 @@ class Entity {
 	 *  
 	 * out: 0 on fail, 1 on success
 	 * 
+	 * Used for POST
 	 * */
 	public function add() {
 		//run a rest util that converts the JSON data to an array. Rest util should be able to accept an array as well as obj
@@ -108,11 +109,55 @@ class Entity {
 		}
 	}
 
+	/* in: JSON Data for users:name and users:password 
+	 * out: authentication status message
+	 * 
+	 * Used for POST
+	 * name and password are sent to the server inside a users JSON obj. If user exists we recieve a positive reply
+	 * */
 	public function authenticate() {
-		echo 'auth';
+		// todo later: test for query run failure
+		$result = "user does'nt exist";
+		$sQry = '';
+		$sCollection = RESTUtil::getURICollection();
+		$oJSON = RESTUtil::JSONtoPHPObj($_POST);
+		
+		if ( isset($oJSON->{$sCollection}[0]) ) { // If the JSON obj name == the collection url
+			$arrData = (array)$oJSON->{$sCollection}[0]; // Return 0th array (who's val is an obj) from objects member (who's val should be the Collection url) 
+			
+			$sQry = 'SELECT * FROM ' . $sCollection . 
+					' WHERE name = "' . $oJSON->users[0]->name . '" AND password = "' . $oJSON->users[0]->password . '"';
+	        
+	        $this->DB->query($sQry); // TODO: do err checking
+	        $result = ($this->DB->numRows()) ? "user exists" : "user does'nt exist";
+		} else {
+			//TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
+		}
+		
+		return $result;
 	}
-	 
-	public function view() {;} 
+
+	/* in: 
+	 * out: JSON data for current Item
+	 * 
+	 * Used for GET
+	 * returns data for a an item in JSON format
+	 * */
+	public function view() {
+		// todo later: test for query run failure
+		$result = NULL;
+		$sQry = '';
+		$sCollection = RESTUtil::getURICollection();
+		$sItem = RESTUtil::getURIItem();
+		
+		$sQry = 'SELECT * FROM ' . $sCollection . 
+				' WHERE id = ' . $sItem . '';
+        
+        $this->DB->query($sQry); // TODO: do err checking
+        $result = RESTUtil::arrayToJSONString($this->DB->rows());
+        
+		return $result;
+	} 
 	public function delete() {;} 
 	public function update() {;} 
 	public function listAll() {;} 
@@ -153,12 +198,26 @@ class RESTUtil {
 	}
 	
 	/* in: 
-	 * out: lowercase extension datatype
+	 * out: lowercase extension eg '.json'
 	 * */
 	public static function getURIExtension() {
 		// TODO: clean up
-		$sBase = strtolower(basename($_SERVER['REQUEST_URI']));
-		$sExt = 'json'; // Use JSON as default
+		$ext = NULL;
+		
+		if ( strpos($_SERVER['REQUEST_URI'], '.') ) {
+			$ext = strtolower(substr(basename($_SERVER['REQUEST_URI']), strpos(basename($_SERVER['REQUEST_URI']), '.')) ); // eg '.json'
+		}
+		return $ext;
+	}
+	
+	/* in: 
+	 * out: lowercase data type eg 'json'
+	 * */
+	public static function getDataType() {
+		// TODO: clean up
+		$sExt = 'json'; //default
+		
+		$sBase = self::getURIExtension();
 		
 		if ( strstr($sBase, 'json') ) {
 			$sExt = 'json';
@@ -183,7 +242,8 @@ class RESTUtil {
 	 * */
 	public static function getURIItem() {
 		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
-		return ( isset($request_parts[3]) && $request_parts[3] !=='') ? $request_parts[3] : 0;
+		$sItem = str_replace(RESTUtil::getURIExtension(), '', $request_parts[3]); //remove extension, eg '33.json' will change to '33'
+		return $sItem;
 	}
 	
 	/* in:
@@ -192,7 +252,7 @@ class RESTUtil {
 	 * Made to return data wether it is sent as a POST, or as raw input
 	 * */
 	public function getRequestData() {
-		$data = '';
+		$data = NULL;
 		if ( $this->sRequestType == 'post' ) {
 			
 			if ( isset($_POST) && !empty($_POST) ) { // if JSON Obj posted via ajax POST
@@ -216,8 +276,8 @@ class RESTUtil {
 	public function process(Entity $myEntity) {
 		if ( isset($this->RequestData) && !empty($this->RequestData) ) {
 			if ( $this->sRequestType == 'post' ) {
-				if ( RESTUtil::getURIItem() ) { // POST /users/22
-					$myEntity->authenticate();
+				if ( (RESTUtil::getURICollection() == 'users') && (RESTUtil::getURIItem() == 'authenticate') ) { // POST /users/authenticate
+					echo $myEntity->authenticate();
 				} else {
 					$myEntity->add(); // POST /users
 				}
@@ -226,9 +286,26 @@ class RESTUtil {
 			}
 		} else {
 			if ( $this->sRequestType == 'get' ) {
-				;//TODO
+				if ( RESTUtil::getURIItem() ) { // GET /users/22
+					echo $myEntity->view();
+				}
 			}
 		}
+	}
+	
+	/* in: an Array 
+	 * out: json string
+	 * */	
+	public static function arrayToJSONString($theArray) {
+		$result = NULL;
+		if ( !empty($theArray) ) {
+			$sCollection = self::getURICollection();
+			$aNewArr[$sCollection] = $theArray;
+			
+	        $oNewObj = (object)$aNewArr;
+			$result = json_encode($oNewObj);
+		}
+        return $result;
 	}
 	
 	
