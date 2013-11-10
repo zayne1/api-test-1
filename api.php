@@ -85,22 +85,31 @@ class Entity {
 		// todo later: test for query run failure
 		$sQry = '';
 		$sCollection = RESTUtil::getURICollection();
-		$arrData = RESTUtil::JSONtoPHPObj($_POST);
-		$arrData = (array)$arrData;
+		$oJSON = RESTUtil::JSONtoPHPObj($_POST);
 		
-		$sFields = '';
-		$sVals = '';
-		
-		foreach ($arrData as $key => $value) { // TODO: This currently makes everything a str via the quotes. you should cater for non-strings too
-			$sFields.= $key . ',';
-			$sVals.= '"' . $value . '",';
+		if ( isset($oJSON->{$sCollection}[0]) ) { // If the JSON obj name == the collection url
+			$arrData = (array)$oJSON->{$sCollection}[0]; // Return 0th array (who's val is an obj) from objects member (who's val should be the Collection url) 
+			
+			$sFields = '';
+			$sVals = '';
+			
+			foreach ($arrData as $key => $value) { // TODO: This currently makes everything a str via the quotes. you should cater for non-strings too
+				$sFields.= $key . ',';
+				$sVals.= '"' . $value . '",';
+			}
+			
+			$sFields = substr_replace($sFields, ')', -1);
+			$sVals = substr_replace($sVals, ')', -1);
+			
+			$sQry = 'INSERT into ' . $sCollection . ' (' . $sFields . ' VALUES (' . $sVals;
+	        $this->DB->query($sQry); // TODO: do err checking
+		} else {
+			//TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
 		}
-		
-		$sFields = substr_replace($sFields, ')', -1);
-		$sVals = substr_replace($sVals, ')', -1);
-		
-		$sQry = 'INSERT into ' . $sCollection . ' (' . $sFields . ' VALUES (' . $sVals;
-        //$this->DB->query($sQry); // TODO: do err checking
+	}
+
+	public function authenticate() {
+		echo 'auth';
 	}
 	 
 	public function view() {;} 
@@ -137,8 +146,8 @@ class RESTUtil {
 		    $sJson = stripslashes($JSONPOST[$sCollection]);
 		    $oJson = json_decode($sJson);
 		} elseif ( (file_get_contents('php://input')) ) { // if JSON data sent as raw input
-		    $post_vars = json_decode(file_get_contents('php://input'));
-        	$oJson = $post_vars;
+		    $post_vars = (file_get_contents('php://input'));  
+        	$oJson = json_decode($post_vars);
 		}
 		return $oJson;
 	}
@@ -189,10 +198,10 @@ class RESTUtil {
 			if ( isset($_POST) && !empty($_POST) ) { // if JSON Obj posted via ajax POST
 				$data = $_POST;
 			} elseif ( file_get_contents('php://input') )  { // if JSON data sent as raw input
-				$data = json_decode(file_get_contents('php://input'));	
+				$data = file_get_contents('php://input');	
 			}
 			
-		} elseif ( $this->sRequestType == 'put' ) {
+		} elseif ( $this->sRequestType == 'put' ) { // if JSON data sent as raw input
 			 parse_str(file_get_contents('php://input'), $put_vars);
             $data = $put_vars; 
 		}
@@ -207,7 +216,11 @@ class RESTUtil {
 	public function process(Entity $myEntity) {
 		if ( isset($this->RequestData) && !empty($this->RequestData) ) {
 			if ( $this->sRequestType == 'post' ) {
-			$myEntity->add();	
+				if ( RESTUtil::getURIItem() ) { // POST /users/22
+					$myEntity->authenticate();
+				} else {
+					$myEntity->add(); // POST /users
+				}
 			} elseif ( $this->sRequestType == 'delete' ) {
 				;//TODO
 			}
