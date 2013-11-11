@@ -5,7 +5,7 @@ require('config.php');
 
 class Database {
     
-    protected $_link, $_result, $_numRows;
+    protected $_link, $_result, $_numRows, $_affectedRows;
     
     public function __construct() {
         $Config = new Config();
@@ -23,6 +23,7 @@ class Database {
     public function query($sql) {
         $this->_result = $this->_link->query($sql);
         $this->_numRows = mysqli_num_rows($this->_result); // save num rows of result 
+        $this->_affectedRows = mysqli_affected_rows($this->_link); // the num of rows affected 
     }
     
     public function numRows() {
@@ -39,6 +40,14 @@ class Database {
             $rows[] = mysqli_fetch_assoc($this->_result);
         }
         return $rows;
+    }
+	
+	public function queryStatus() {
+		return $this->_result;
+	}
+	
+    public function affectedRows() {
+        return ($this->_affectedRows == -1) ? 0 : $this->_affectedRows;
     }
 }
 ?>
