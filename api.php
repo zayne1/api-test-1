@@ -350,7 +350,7 @@ class RESTUtil {
 	public function process(Entity $myEntity) {
 		if ( isset($this->RequestData) && !empty($this->RequestData) ) {
 			if ( $this->sRequestType == 'post' ) {
-				if ( (RESTUtil::getURICollection() == 'users') && (RESTUtil::getURIItem1() == 'authenticate') ) { // POST /users/authenticate
+				if ( (RESTUtil::getURICollection() == 'users') && (RESTUtil::getURIItem2() == 'authenticate') ) { // POST /users/authenticate
 					// try to authenticate
 					$myEntity->authenticate() ? ( self::sendResponse(200, 'User exists') ) : ( self::sendResponse(404, 'User Not Found') );
 				} else {
