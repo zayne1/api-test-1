@@ -85,7 +85,7 @@ class Entity {
 		// run query
 		// todo later: test for query run failure
 		$sQry = '';
-		$sCollection = RESTUtil::getURICollection();
+		$sCollection = RESTUtil::getURIItem2() ? RESTUtil::getURIItem2() : RESTUtil::getURICollection(); // if app.com/comments, then use 'comments'. If app.com/comments/reply, then use 'reply'
 		$oJSON = RESTUtil::JSONtoPHPObj($_POST);
 		
 		if ( isset($oJSON->{$sCollection}[0]) ) { // If the JSON obj name == the collection url
@@ -103,7 +103,10 @@ class Entity {
 			$sVals = substr_replace($sVals, ')', -1);
 			
 			$sQry = 'INSERT into ' . $sCollection . ' (' . $sFields . ' VALUES (' . $sVals;
-	        $this->DB->query($sQry); // TODO: do err checking
+	        $this->DB->query($sQry);
+	        return $this->DB->queryStatus();
+		} elseif (condition) {
+			
 		} else {
 			//TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
 		}
@@ -117,7 +120,7 @@ class Entity {
 	 * */
 	public function authenticate() {
 		// todo later: test for query run failure
-		$result = "user does'nt exist";
+		$result = 0;
 		$sQry = '';
 		$sCollection = RESTUtil::getURICollection();
 		$oJSON = RESTUtil::JSONtoPHPObj($_POST);
@@ -129,7 +132,7 @@ class Entity {
 					' WHERE name = "' . $oJSON->users[0]->name . '" AND password = "' . $oJSON->users[0]->password . '"';
 	        
 	        $this->DB->query($sQry); // TODO: do err checking
-	        $result = ($this->DB->numRows()) ? "user exists" : "user does'nt exist";
+	        $result = $this->DB->numRows();
 		} else {
 			//TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
 		}
@@ -147,29 +150,36 @@ class Entity {
 		// todo later: test for query run failure
 		$result = NULL;
 		$sQry = '';
-		$sCollection = RESTUtil::getURICollection();
-		$sItem = RESTUtil::getURIItem();
+		$sCollection = RESTUtil::getURIItem3() ? RESTUtil::getURIItem2() : RESTUtil::getURICollection(); // if app.com/comments, then use 'comments'. If app.com/comments/reply, then use 'reply'
+		// $sItem1 = RESTUtil::getURIItem2();
+		$sItem = RESTUtil::getURIItem3() ? RESTUtil::getURIItem3() : RESTUtil::getURIItem2();
 		
 		$sQry = 'SELECT * FROM ' . $sCollection . 
 				' WHERE id = ' . $sItem . '';
         
         $this->DB->query($sQry); // TODO: do err checking
-        $result = RESTUtil::arrayToJSONString($this->DB->rows());
+        $result = RESTUtil::arrayToJSONString($this->DB->rows() , $sCollection);
         
 		return $result;
 	} 
 	
-	public function delete($aMyArray) {
-		$sCollection = RESTUtil::getURICollection();
-		$sItem = RESTUtil::getURIItem();
+	public function delete() {
+		$sCollection = RESTUtil::getURIItem3() ? RESTUtil::getURIItem2() : RESTUtil::getURICollection(); // If app.com/comments/reply, then use 'reply'. If app.com/comments, then use 'comments'. 
+		$sItem = RESTUtil::getURIItem3() ? RESTUtil::getURIItem3() : RESTUtil::getURIItem2();
+		
 		$sQry = 'DELETE FROM ' . $sCollection . 
 				' WHERE id = ' . $sItem . '';
+		$this->DB->query($sQry);
+		return $this->DB->affectedRows();
+		
 	} 
 	public function update($oJSON) {
 		// todo later: test for query run failure
+		$result = 0;
+		
 		$sQry = '';
-		$sCollection = RESTUtil::getURICollection();
-		$sItem = RESTUtil::getURIItem();
+		$sCollection = RESTUtil::getURIItem3() ? RESTUtil::getURIItem2() : RESTUtil::getURICollection(); // If app.com/comments/reply, then use 'reply'. If app.com/comments, then use 'comments'. 
+		$sItem = RESTUtil::getURIItem3() ? RESTUtil::getURIItem3() : RESTUtil::getURIItem2();
 		
 		if ( isset($oJSON->{$sCollection}[0]) ) { // If the JSON obj name == the collection url
 			$arrData = (array)$oJSON->{$sCollection}[0]; // Return 0th array (who's val is an obj) from objects member (who's val should be the Collection url) 
@@ -188,9 +198,12 @@ class Entity {
 					WHERE id = ' . $sItem;
 		
 	        $this->DB->query($sQry); // TODO: do err checking
+	        $result = $this->DB->affectedRows();
 		} else {
 			//TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
 		}
+		
+		return $result;
 	} 
 	public function listAll() {;}
 } 
@@ -270,12 +283,42 @@ class RESTUtil {
 	}
 
 	/* in:
-	 * out: 'Item' part of URL, eg for the URL www.myapp.com/user/244.json we would return '244' 
+	 * out: first 'Item' part of URL, eg for the URL www.myapp.com/user/244.json we would return '244' 
 	 * */
-	public static function getURIItem() {
+	public static function getURIItem1() {
+		$sItem1 = 0;
 		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
-		$sItem = str_replace(RESTUtil::getURIExtension(), '', $request_parts[2]); //remove extension, eg '33.json' will change to '33'
-		return $sItem;
+		
+		if ( isset($request_parts[1]) ) {
+			$sItem1 = str_replace(RESTUtil::getURIExtension(), '', $request_parts[1]); //remove extension, eg '33.json' will change to '33'
+		}
+		return $sItem1;
+	}
+
+	/* in:
+	 * out: second 'Item' part of URL, eg for the URL www.myapp.com/user/comment/reply.json we would return 'reply' 
+	 * */
+	public static function getURIItem2() {
+		$sItem2 = 0;	
+		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
+		
+		if ( isset($request_parts[2]) ) {
+			$sItem2 = str_replace(RESTUtil::getURIExtension(), '', $request_parts[2]); //remove extension, eg '33.json' will change to '33'
+		}
+		return $sItem2;
+	}
+
+	/* in:
+	 * out: third 'Item' part of URL, eg for the URL www.myapp.com/user/comment/reply/22.json we would return '22' 
+	 * */
+	public static function getURIItem3() {
+		$sItem3 = 0;	
+		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
+		
+		if ( isset($request_parts[3]) ) {
+			$sItem3 = str_replace(RESTUtil::getURIExtension(), '', $request_parts[3]); //remove extension, eg '33.json' will change to '33'
+		}
+		return $sItem3;
 	}
 	
 	/* in:
@@ -307,25 +350,27 @@ class RESTUtil {
 	public function process(Entity $myEntity) {
 		if ( isset($this->RequestData) && !empty($this->RequestData) ) {
 			if ( $this->sRequestType == 'post' ) {
-				if ( (RESTUtil::getURICollection() == 'users') && (RESTUtil::getURIItem() == 'authenticate') ) { // POST /users/authenticate
-					echo $myEntity->authenticate();
+				if ( (RESTUtil::getURICollection() == 'users') && (RESTUtil::getURIItem1() == 'authenticate') ) { // POST /users/authenticate
+					// try to authenticate
+					$myEntity->authenticate() ? ( self::sendResponse(200, 'User exists') ) : ( self::sendResponse(404, 'User Not Found') );
 				} else {
-					$myEntity->add(); // POST /users
-				}
-			} elseif ( $this->sRequestType == 'delete' ) {
-				if ( RESTUtil::getURIItem() ) { // DELETE /users/22
-					$myEntity->delete();
+					// POST /users
+					$myEntity->add() ? ( self::sendResponse(200, 'Item created') ) : ( self::sendResponse(403, 'Unable to create Item') ); 
 				}
 			} elseif ( $this->sRequestType == 'put' ) {
-				if ( RESTUtil::getURIItem() ) { // PUT /users/22
+				if ( RESTUtil::getURIItem1() ) { // PUT /users/22
 					$oJSON = (json_decode($this->RequestData));
-					$myEntity->update($oJSON);
+					$myEntity->update($oJSON) ? ( self::sendResponse(200, 'Item updated') ) : ( self::sendResponse(304, 'Item not updated') );
 				}
 			}
 		} else {
 			if ( $this->sRequestType == 'get' ) {
-				if ( RESTUtil::getURIItem() ) { // GET /users/22
-					echo $myEntity->view();
+				if ( RESTUtil::getURIItem1() ) { // GET /users/22
+					$myEntity->view() ? ( self::sendResponse(200, $myEntity->view()) ) : ( self::sendResponse(404, 'Could not find Item') );
+				}
+			} elseif ( $this->sRequestType == 'delete' ) {
+				if ( RESTUtil::getURIItem1() ) {
+					$myEntity->delete() ? ( self::sendResponse(200, 'Item Deleted') ) : ( self::sendResponse(403, 'Could not delete Item') );
 				}
 			}
 		}
@@ -334,10 +379,10 @@ class RESTUtil {
 	/* in: an Array 
 	 * out: json string
 	 * */	
-	public static function arrayToJSONString($theArray) {
+	public static function arrayToJSONString($theArray, $sTheCollection = '') {
 		$result = NULL;
 		if ( !empty($theArray) ) {
-			$sCollection = self::getURICollection();
+			$sCollection = empty($sTheCollection) ? self::getURICollection() : $sTheCollection;
 			$aNewArr[$sCollection] = $theArray;
 			
 	        $oNewObj = (object)$aNewArr;
@@ -345,6 +390,39 @@ class RESTUtil {
 		}
         return $result;
 	}
+	
+	public static function sendResponse($statusCode = 200, $responseBody = ''){
+		header('HTTP/1.1 ' . $statusCode . ' ' . self::getStatusCodeMessage($statusCode)  );
+		header('Content-type: ' . 'application/' . self::getDataType());
+		
+		echo $responseBody;
+		
+	}
+	
+	public static function getStatusCodeMessage($statusCode) {
+        $codes = Array(  
+            200 => 'OK',  
+            201 => 'Created',  
+            202 => 'Accepted',  
+            203 => 'Non-Authoritative Information',  
+            204 => 'No Content',  
+            300 => 'Multiple Choices',  
+            302 => 'Found',  
+            304 => 'Not Modified',  
+            400 => 'Bad Request',  
+            401 => 'Unauthorized',  
+            403 => 'Forbidden',  
+            404 => 'Not Found',  
+            405 => 'Method Not Allowed',  
+            406 => 'Not Acceptable',  
+            409 => 'Conflict',  
+            410 => 'Gone',  
+            415 => 'Unsupported Media Type',  
+            500 => 'Internal Server Error',  
+            501 => 'Not Implemented'
+        );  
+        return (isset($codes[$statusCode])) ? $codes[$statusCode] : '';  
+    }  
 	
 	
 }
