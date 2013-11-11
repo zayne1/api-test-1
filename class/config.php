@@ -3,6 +3,6 @@ class Config {
 	public $server='localhost';
 	public $user='root';
 	public $password='ert123iop';
-	public $dbase='api-test';	
+	public $dbase='api_test';	
 }
 ?>
