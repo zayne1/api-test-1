@@ -266,7 +266,7 @@ class RESTUtil {
 	 * */
 	public static function getURICollection() {
 		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
-		return ( isset($request_parts[2]) && $request_parts[2] !=='') ? $request_parts[2] : 0;
+		return ( isset($request_parts[1]) && $request_parts[1] !=='') ? $request_parts[1] : 0;
 	}
 
 	/* in:
@@ -274,7 +274,7 @@ class RESTUtil {
 	 * */
 	public static function getURIItem() {
 		$request_parts = explode('/', $_SERVER['REQUEST_URI']);
-		$sItem = str_replace(RESTUtil::getURIExtension(), '', $request_parts[3]); //remove extension, eg '33.json' will change to '33'
+		$sItem = str_replace(RESTUtil::getURIExtension(), '', $request_parts[2]); //remove extension, eg '33.json' will change to '33'
 		return $sItem;
 	}
 	
@@ -369,6 +369,7 @@ class RESTUtil {
 
 
 /* Tests start */
+/*
 class d {
 		public $age = 0;
 		public $title = 0;
@@ -381,7 +382,8 @@ class d {
 	$d2->age = 22;
 	$d2->title = mam;
 
-$e = new Entity;
+$e = new Entity;*/
+
 // $e->add();
 
 
