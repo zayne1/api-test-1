@@ -49,5 +49,9 @@ class Database {
     public function affectedRows() {
         return ($this->_affectedRows == -1) ? 0 : $this->_affectedRows;
     }
+
+    public function newID() {
+        return mysqli_insert_id($this->_link);
+    }
 }
 ?>

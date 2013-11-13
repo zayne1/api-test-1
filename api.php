@@ -76,7 +76,7 @@ class Entity {
      *          Array containing Objects, if multiple objects were sent from client
      * 
      *  
-     * out: 0 on fail, 1 on success
+     * out: 0 on fail, the newly created ID field on success
      * 
      * Used for POST
      * */
@@ -102,7 +102,7 @@ class Entity {
             $sVals      = substr_replace($sVals, ')', -1);
             $sQry       = 'INSERT into ' . $sCollection . ' (' . $sFields . ' VALUES (' . $sVals;
             $this->DB->query($sQry);
-            return $this->DB->queryStatus();
+            return $this->DB->newID();
         } else {
             //TODO: this runs if the JSON obj name doesnt equal the collection url. make a good err mesg and return a http status code
         }
@@ -362,7 +362,8 @@ class RESTUtil {
                     // POST /users
                     $sCollection    = self::getURIItem2() ? self::getURIItem2() : self::getURICollection(); // if app.com/comments, then use 'comments'. If app.com/comments/reply, then use 'reply'
                     $oJSON          = self::JSONtoPHPObj($_POST);
-                    $myEntity->add($sCollection, $oJSON) ? ( self::sendResponse(200, 'Item created') ) : ( self::sendResponse(403, 'Unable to create Item') ); 
+                    $newID          = $myEntity->add($sCollection, $oJSON); 
+                    $newID ? ( self::sendResponse(200, $newID) ) : ( self::sendResponse(403, 'Unable to create Item') ); 
                 }
             } elseif ( $this->sRequestType == 'put' ) {
                 if ( self::getURIItem1() ) { // PUT /users/22
@@ -382,7 +383,7 @@ class RESTUtil {
                     $sCollection    = self::getURIItem3() ? self::getURIItem2() : self::getURICollection(); // if app.com/comments, then use 'comments'. If app.com/comments/reply, then use 'reply'
                     $sItem          = self::getURIItem3() ? self::getURIItem3() : self::getURIItem2();
                     
-                    $result         = $myEntity->view($sCollection, $sItem);//die(var_dump($result)); // returns NULL if no data found
+                    $result         = $myEntity->view($sCollection, $sItem); // returns NULL if no data found
                     $result         = !($result) ? $myEntity->listAll($sItem) : $result; // if result is empty (could not get singular data item), try listAll
                     
                     $result ? ( self::sendResponse(200, $result) ) : ( self::sendResponse(404, 'Could not find Item') );
