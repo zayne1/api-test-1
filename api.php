@@ -139,12 +139,11 @@ class Entity {
      * out: JSON data for current Item
      * 
      * Used for GET
-     * returns data for a an item in JSON format
+     * Returns data for a an single item in JSON format
      * */
     public function view($sCollection, $sItem) {
         // todo later: test for query run failure
         $result = NULL;
-        $sQry   = '';
         $sQry   =   'SELECT * FROM ' . $sCollection . 
                     ' WHERE id = ' . $sItem . '';
         $this->DB->query($sQry); // TODO: do err checking
@@ -198,7 +197,25 @@ class Entity {
         return $result;
     } 
 
-    public function listAll() {;}
+    /* in:  1)  Collection part of URL
+     *      2)  result limiter     
+     *  
+     * out: JSON data for current Collection
+     * 
+     * Used for GET
+     * Retrives all data for the current Collection
+     * */
+    public function listAll($sCollection, $limit = 20) {
+        // todo later: test for query run failure
+        //TODO: do research on the best way to link the user to more results 
+        $result =   NULL;
+        $sQry   =   'SELECT * FROM ' . $sCollection . 
+                    ' LIMIT 0 , ' . $limit . '';
+        $this->DB->query($sQry); // TODO: do err checking
+            
+        $result = RESTUtil::arrayToJSONString($this->DB->rows() , $sCollection);
+        return $result;
+    }
 } 
 
 /*** API file section END  ***/
@@ -357,10 +374,17 @@ class RESTUtil {
             }
         } else {
             if ( $this->sRequestType == 'get' ) {
-                if ( self::getURIItem1() ) { // GET /users/22
+                if ( !self::getURIItem2() ) { // if we only have a Colection URL and nothing else eg GET /users/
+                    $sCollection    = self::getURICollection(); // if app.com/comments, then use 'comments'. If app.com/comments/reply, then use 'reply'
+                    $result         = $myEntity->listAll($sCollection); // returns NULL if no data found 
+                    $result ? ( self::sendResponse(200, $result) ) : ( self::sendResponse(404, 'Could not find Item') );
+                } else { // if we have more than 1 URL param eg: GET /users/22 or GET /comments/replies or GET comments/replies/11
                     $sCollection    = self::getURIItem3() ? self::getURIItem2() : self::getURICollection(); // if app.com/comments, then use 'comments'. If app.com/comments/reply, then use 'reply'
                     $sItem          = self::getURIItem3() ? self::getURIItem3() : self::getURIItem2();
-                    $result         = $myEntity->view($sCollection, $sItem); // returns NULL if no data found 
+                    
+                    $result         = $myEntity->view($sCollection, $sItem);//die(var_dump($result)); // returns NULL if no data found
+                    $result         = !($result) ? $myEntity->listAll($sItem) : $result; // if result is empty (could not get singular data item), try listAll
+                    
                     $result ? ( self::sendResponse(200, $result) ) : ( self::sendResponse(404, 'Could not find Item') );
                 }
             } elseif ( $this->sRequestType == 'delete' ) {
