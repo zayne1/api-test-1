@@ -53,5 +53,38 @@ class Database {
     public function newID() {
         return mysqli_insert_id($this->_link);
     }
+    
+    /* 
+     * in:  db link
+     * out: Array: Multi dimensional schema of database
+     * 
+     * */
+    public function getSchema() {
+        $sDBName = '';
+        $aTables = array();
+        $aTablesCols = array();
+        
+        
+        $this->query("SELECT database() AS the_db");
+        $aDb = $this->rows();
+        $sDBName = $aDb[0]['the_db'];
+        
+        $this->query('SHOW TABLES');
+        foreach ($this->rows() as $key => $value) {
+            $aTables[] = $value["Tables_in_{$sDBName}"];   
+        }
+
+        foreach ($aTables as $key => $tbl) {
+            $this->query("SHOW COLUMNS FROM {$tbl}");   
+            $aArray = $this->rows();
+            foreach ($aArray as $key => $value) {
+                $aTablesCols[$tbl][] = $value['Field'];    
+            }
+        }
+        return $aTablesCols;
+        
+    }
+    
+
 }
 ?>
