@@ -1,9 +1,10 @@
 <?php
-/**  
- * Base Database Class to be used by apps
- */
+
 require('class_config.php');
 
+/** 
+ * Base Database Class to be used by apps
+ */
 class Database {
     
     protected $_link, $_result, $_numRows, $_affectedRows;
