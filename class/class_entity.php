@@ -1,9 +1,10 @@
 <?php
 require('class_database.php');
 
-/* The Entity Class is meant to be a parent to our 'entitys' eg User, Topic, Comment, etc.
+/** 
+ * The Entity Class is meant to be a parent to our 'entitys' eg User, Topic, Comment, etc.
  * The idea is to have a ready made base that they can inherit from, which already contains lots of the functionality
- * */
+ */
 class Entity {
     protected $DB;
     protected $JSONData;
@@ -12,7 +13,8 @@ class Entity {
         $this->DB = new Database();
     }
     
-    /* in:  1)  Collection part of URL
+    /** 
+     * in:  1)  Collection part of URL
      *      2)  Object, if it a single JSON obj was sent from client
      *          Array containing Objects, if multiple objects were sent from client
      * 
@@ -20,7 +22,7 @@ class Entity {
      * out: 0 on fail, the newly created ID field on success
      * 
      * Used for POST
-     * */
+     */
     public function add($sCollection, $oJSON) {
         //run a rest util that converts the JSON data to an array. Rest util should be able to accept an array as well as obj
         // todo later: run a api util that checks the keys of an array, and tests to see if they exist in a db
@@ -49,14 +51,15 @@ class Entity {
         }
     }
 
-    /* in:  1)  Collection part of URL    
+    /** 
+     * in:  1)  Collection part of URL    
      *      2)  PHP Object containing Data for users:name and users:password 
      * 
      * out: authentication status message
      * 
      * Used for POST
      * name and password are sent to the server inside a users JSON obj. If user exists we recieve a positive reply
-     * */
+     */
     public function authenticate($sCollection, $oJSON) {
         // todo later: test for query run failure
         $result     = 0;
@@ -74,14 +77,15 @@ class Entity {
         return $result;
     }
 
-    /* in:  1)  Collection part of URL
+    /** 
+     * in:  1)  Collection part of URL
      *      2)  Item part of URL    
      *  
      * out: JSON data for current Item
      * 
      * Used for GET
      * Returns data for a an single item in JSON format
-     * */
+     */
     public function view($sCollection, $sItem) {
         // todo later: test for query run failure
         $result = NULL;
@@ -92,7 +96,8 @@ class Entity {
         return $result;
     } 
     
-    /* in:  1)  Collection part of URL
+    /** 
+     * in:  1)  Collection part of URL
      *      2)  Item part of URL
      * 
      * out: Number of affected rows
@@ -105,7 +110,8 @@ class Entity {
         return $this->DB->affectedRows();
     } 
     
-    /* in:  1)  PHP Object containing all item's data
+    /** 
+     * in:  1)  PHP Object containing all item's data
      *      2)  Collection part of URL
      *      3)  Item part of URL
      * 
@@ -138,7 +144,8 @@ class Entity {
         return $result;
     } 
 
-    /* in:  1)  Collection part of URL
+    /** 
+     * in:  1)  Collection part of URL
      *      2)  result limiter     
      *  
      * out: JSON data for current Collection

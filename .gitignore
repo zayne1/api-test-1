@@ -1,3 +1,4 @@
 .project
 .settings/
-class/config.php 
+class/config.php
+/nbproject

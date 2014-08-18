@@ -1,6 +1,7 @@
 <?php
-/*  Base Database Class to be used by apps
- * */
+/**  
+ * Base Database Class to be used by apps
+ */
 require('class_config.php');
 
 class Database {
@@ -55,11 +56,11 @@ class Database {
         return mysqli_insert_id($this->_link);
     }
     
-    /* 
+    /** 
      * in:  db link
      * out: Array: Multi dimensional schema of database
      * 
-     * */
+     */
     public function getSchema() {
         $sDBName = '';
         $aTables = array();
